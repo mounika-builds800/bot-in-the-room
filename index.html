@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bot in the Room</title>
+<meta name="description" content="A multiplayer party game: everyone answers the same prompt, one answer is secretly written by AI. Spot the bot, or get mistaken for it.">
+<meta property="og:title" content="Bot in the Room">
+<meta property="og:description" content="Everyone answers. One answer is secretly AI. Find the bot.">
+<meta property="og:image" content="cover.png">
+<meta name="theme-color" content="#14112b">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#14112b; --bg2:#1d1940; --card:#231f4d; --card2:#2c2760; --line:#3b357a;
+  --text:#f3f1ff; --muted:#a9a3d6; --accent:#7cf5c8; --accent2:#ff7ab6; --warn:#ffd166; --bad:#ff6b6b;
+  --radius:18px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+body{min-height:100vh;background:radial-gradient(900px 500px at 85% -10%,#3a2a7a55,transparent),radial-gradient(700px 400px at -10% 110%,#0e6b5a44,transparent),var(--bg)}
+#app{max-width:640px;margin:0 auto;padding:12px 16px 48px}
+h1,h2,h3,.f{font-family:Fredoka,Inter,sans-serif;letter-spacing:.2px}
+h1{font-size:44px;line-height:1.05;margin:8px 0}
+h2{font-size:26px;margin:0 0 8px}
+h3{font-size:18px;margin:0 0 10px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0 14px}
+.brand{font-family:Fredoka;font-weight:600;font-size:18px;display:flex;align-items:center;gap:8px}
+.chip-code{font-family:Fredoka;background:var(--card2);border:1px solid var(--line);padding:4px 10px;border-radius:999px;font-size:14px;letter-spacing:2px}
+.card{background:linear-gradient(180deg,var(--card),var(--bg2));border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin:12px 0;box-shadow:0 10px 30px #0004}
+.center{text-align:center}
+label{display:block;font-size:13px;color:var(--muted);margin:0 0 6px;font-weight:600;text-transform:uppercase;letter-spacing:.6px}
+input,textarea,select{width:100%;font:inherit;color:var(--text);background:#0f0c24;border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;outline:none;transition:border-color .15s}
+input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+textarea{resize:none;font-size:18px}
+.row{display:flex;gap:10px;align-items:center}
+.row>*{flex:1}
+.row>.shrink{flex:0 0 auto}
+.btn{appearance:none;border:0;cursor:pointer;font:600 16px Fredoka,Inter,sans-serif;padding:13px 18px;border-radius:14px;background:var(--card2);color:var(--text);border:1.5px solid var(--line);transition:transform .08s,filter .15s;width:100%}
+.btn:hover{filter:brightness(1.12)}.btn:active{transform:scale(.98)}
+.btn.primary{background:linear-gradient(135deg,var(--accent),#4fd1ff);color:#0c1030;border:0}
+.btn.pink{background:linear-gradient(135deg,var(--accent2),#ffb36b);color:#2a0b1e;border:0}
+.btn.ghost{background:transparent}
+.btn.small{padding:8px 12px;font-size:14px;width:auto;border-radius:10px}
+.btn[disabled]{opacity:.45;cursor:not-allowed;filter:none;transform:none}
+.or{text-align:center;color:var(--muted);font-size:13px;margin:16px 0 10px}
+.code-input{text-transform:uppercase;letter-spacing:6px;font-family:Fredoka;font-size:22px;text-align:center}
+.err{color:var(--bad);font-size:14px;margin:10px 0 0}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.hero{text-align:center;padding:18px 0 4px}
+.logo{font-size:64px;line-height:1;filter:drop-shadow(0 8px 20px #7cf5c855);animation:bob 3s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-6px) rotate(-4deg)}}
+.tag{color:var(--muted);font-size:17px;max-width:460px;margin:6px auto 0}
+.steps{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.steps li{display:flex;gap:12px;align-items:flex-start}
+.steps b{font-family:Fredoka}
+.num{flex:0 0 28px;height:28px;border-radius:50%;background:var(--card2);display:grid;place-items:center;font-family:Fredoka;color:var(--accent)}
+.foot{text-align:center;color:var(--muted);font-size:13px;margin-top:20px}
+.bigcode{font-family:Fredoka;font-size:56px;letter-spacing:10px;color:var(--accent);line-height:1.1;margin:4px 0 10px}
+#qr{display:inline-block;background:#fff;padding:8px;border-radius:12px;margin:6px 0 12px}
+#qr img,#qr canvas{display:block;width:132px;height:132px}
+.players{display:flex;flex-wrap:wrap;gap:8px}
+.pchip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px 6px 6px;border-radius:999px;background:#0f0c24;border:1px solid var(--line);font-size:14px;font-weight:500}
+.pchip.off{opacity:.45}
+.pchip.done{border-color:var(--accent)}
+.av{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font:700 12px Fredoka;color:#14112b}
+.pchip .x{background:none;border:0;color:var(--muted);cursor:pointer;font-size:16px;padding:0 2px}
+.check{color:var(--accent);font-weight:700}
+.roundbar{display:flex;justify-content:space-between;align-items:center;font-family:Fredoka;color:var(--muted);margin:4px 0 8px}
+.timer{position:relative;height:8px;background:#0f0c24;border-radius:99px;overflow:hidden;margin-bottom:6px}
+.timer .bar{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,var(--accent),#4fd1ff);transition:width .25s linear}
+.timer.low .bar{background:linear-gradient(90deg,var(--bad),var(--warn))}
+#tnum{font-variant-numeric:tabular-nums}
+.prompt{font-family:Fredoka;font-size:26px;line-height:1.2;padding:22px 18px;border-radius:var(--radius);background:linear-gradient(135deg,#3b2a8a,#20185a);border:1px solid #5a4bc0;margin:10px 0 14px;text-align:center}
+.prompt.sm{font-size:18px;padding:14px}
+.count{color:var(--muted);font-size:13px;flex:0 0 auto}
+.locked{font-size:18px;padding:14px;border-radius:14px;background:#0f0c24;border:1.5px dashed var(--accent);margin-bottom:10px}
+.answers{display:grid;gap:10px}
+.ans{text-align:left;font:500 18px Inter;line-height:1.35;padding:14px 16px;border-radius:14px;background:#0f0c24;border:1.5px solid var(--line);color:var(--text);cursor:pointer;position:relative;transition:transform .08s,border-color .15s}
+.ans:hover:not([disabled]){border-color:#6c62d0}
+.ans.sel{border-color:var(--accent2);box-shadow:0 0 0 3px #ff7ab633;background:#2a1640}
+.ans[disabled]{cursor:default}
+.ans.mine{opacity:.6}
+.ans .tagx{position:absolute;top:-9px;right:10px;font:600 11px Fredoka;letter-spacing:.5px;padding:2px 8px;border-radius:99px;background:var(--card2);border:1px solid var(--line);color:var(--muted)}
+.ans.bot{border-color:var(--accent2);background:linear-gradient(135deg,#3a1440,#1f1240)}
+.who{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px;color:var(--muted);flex-wrap:wrap}
+.who .owner{font-weight:600;color:var(--text)}
+.vchip{font-size:12px;padding:2px 8px;border-radius:99px;background:var(--card2)}
+.headline{font-family:Fredoka;font-size:24px;text-align:center;margin:6px 0 4px}
+.score{display:grid;gap:6px}
+.srow{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:#0f0c24}
+.srow .n{flex:1;font-weight:600}
+.srow .pts{font-family:Fredoka;font-size:18px}
+.gain{font:600 12px Fredoka;color:var(--accent);margin-left:6px}
+.vs{display:flex;align-items:center;justify-content:center;gap:16px;font-family:Fredoka;font-size:20px;margin:6px 0}
+.vs .big{font-size:38px}
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:10px;margin:10px 0 6px}
+.pod{flex:1;max-width:150px;text-align:center}
+.pod .blk{border-radius:12px 12px 4px 4px;background:var(--card2);border:1px solid var(--line);display:grid;place-items:center;font-family:Fredoka;font-size:26px}
+.pod .nm{font-weight:600;margin:6px 0 4px;word-break:break-word}
+.awards{display:grid;gap:8px;grid-template-columns:1fr 1fr}
+.award{background:#0f0c24;border-radius:12px;padding:12px;text-align:center}
+.award .t{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.award .v{font-family:Fredoka;font-size:18px;margin-top:4px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.note{font-size:13px;color:var(--muted);background:#0f0c24;border-radius:12px;padding:10px 12px;margin-top:10px}
+.pill{display:inline-block;font:600 12px Fredoka;padding:3px 9px;border-radius:99px;background:#0f0c24;border:1px solid var(--line)}
+.pill.ok{color:var(--accent);border-color:#2d7a64}
+.pill.off{color:var(--warn);border-color:#7a6a2d}
+.spin{width:38px;height:38px;border-radius:50%;border:4px solid var(--line);border-top-color:var(--accent);animation:sp 0.9s linear infinite;margin:30px auto 14px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.dots::after{content:'';animation:dots 1.4s steps(4) infinite}
+@keyframes dots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(30px);opacity:0;background:#0f0c24;border:1px solid var(--line);color:var(--text);padding:10px 16px;border-radius:12px;font-size:14px;transition:.25s;pointer-events:none;max-width:calc(100% - 32px);z-index:9;box-shadow:0 10px 30px #0008}
+#toast.on{opacity:1;transform:translateX(-50%)}
+.banner{background:#3a2a10;border:1px solid #7a5a1d;color:var(--warn);padding:10px 12px;border-radius:12px;font-size:14px;text-align:center;margin-bottom:8px}
+.pop{animation:pop .35s ease}
+@keyframes pop{0%{transform:scale(.96);opacity:.3}100%{transform:none;opacity:1}}
+details summary{cursor:pointer;color:var(--muted);font-size:14px}
+a{color:var(--accent)}
+@media (max-width:420px){h1{font-size:36px}.prompt{font-size:22px}.bigcode{font-size:46px}.awards{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast"></div>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+'use strict';
+/* ---------- prompts (with a pre-written answer used when the AI is offline) ---------- */
+const PROMPTS = [
+  ["The worst thing to say on a first date","so how many kids do you want, ballpark"],
+  ["A rejected name for a new ice cream flavor","wet sand swirl"],
+  ["What your fridge would say about you if it could talk","please stop opening me just to stare"],
+  ["The most useless superpower","making toast slightly warmer"],
+  ["A terrible slogan for a dentist","we'll get to the root of your wallet"],
+  ["Describe your morning routine in five words","alarm snooze panic coffee late"],
+  ["What aliens would find most confusing about humans","paying money to run on a treadmill"],
+  ["A sign you've been working from home too long","i greet the delivery guy like an old friend"],
+  ["The title of your autobiography","I'll Do It Tomorrow: A Memoir"],
+  ["Something you should never say at a wedding","who wants to bet how long this lasts"],
+  ["The worst possible name for a pet goldfish","sushi"],
+  ["A fortune cookie message that's slightly threatening","you will find what you lost. we have it"],
+  ["A new Olympic sport nobody asked for","competitive waiting in line"],
+  ["What your phone's autocorrect secretly thinks of you","you still can't spell restaurant"],
+  ["The real reason dinosaurs went extinct","they never invented snacks"],
+  ["Your text if you were stuck in an elevator","tell my plants i loved them"],
+  ["The worst thing to hear from your pilot","anyone here good with maps?"],
+  ["A hobby that sounds fake but should exist","competitive napping"],
+  ["The most dramatic way to quit a job","resign by marching band"],
+  ["What a cat is thinking while staring at you","i could take you"],
+  ["A movie title that would ruin a kid's birthday party","Toy Story 5: The Recall"],
+  ["One thing you'd ban if you ran the world","reply all"],
+  ["A bad excuse for being late","my horoscope said take it slow"],
+  ["Grandma's secret recipe ingredient, honestly","an alarming amount of butter"],
+  ["A sequel nobody needs","finding nemo 3: found again"],
+  ["The worst thing to find in your burrito","a smaller burrito"],
+  ["If your pet had a podcast, what would it be called?","Treats and Grievances"],
+  ["Describe the internet to someone from 1850","a giant library where everyone is yelling"],
+  ["What the group chat is really for","memes at 2am and cancelled plans"],
+  ["A totally honest name for a gym","Monthly Donation Fitness"],
+  ["A secret talent you'd put on your resume","parallel parking first try"],
+  ["A weird thing to collect","hotel shampoo bottles"],
+  ["What the moon does when nobody is watching","practices being full"],
+  ["The worst job for a vampire","beach lifeguard"],
+  ["A new emoji the world needs","the face for 'per my last email'"],
+  ["The best thing about being a kid","naps were mandatory"]
+];
+const COLORS=['#7cf5c8','#ff7ab6','#ffd166','#7aa8ff','#c79bff','#ffa36b','#5ee0e8','#f58cf0','#b5e36b','#ff8f8f','#9be7ff','#e3b5ff'];
+const MAX_PLAYERS=12, MAX_ANS=90, PREFIX='bitr-v1-';
+const PEER_OPTS={debug:0,config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:'stun:global.stun.twilio.com:3478'}]}};
+
+/* ---------- small helpers ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rid=n=>Array.from(crypto.getRandomValues(new Uint8Array(n)),b=>'abcdefghijkmnpqrstuvwxyz23456789'[b%32]).join('');
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const clean=(s,n)=>String(s||'').replace(/\s+/g,' ').trim().slice(0,n);
+const initial=n=>esc((n||'?').trim().charAt(0).toUpperCase());
+const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}}};
+const ss={get(k){try{return sessionStorage.getItem(k)}catch(e){return null}},set(k,v){try{sessionStorage.setItem(k,v)}catch(e){}}};
+let toastT;
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),2800)}
+function newCode(){const A='ABCDEFGHJKLMNPQRSTUVWXYZ';return Array.from(crypto.getRandomValues(new Uint8Array(4)),b=>A[b%A.length]).join('')}
+
+/* ---------- local identity + UI state ---------- */
+const myPid=ss.get('bitr_pid')||rid(10); ss.set('bitr_pid',myPid);
+const urlRoom=(new URLSearchParams(location.search).get('room')||'').toUpperCase().replace(/[^A-Z]/g,'').slice(0,4);
+const ui={screen:'home',name:ls.get('bitr_name')||'',joinCode:urlRoom,draft:'',editing:false,error:'',status:'',
+  key:ls.get('bitr_key')||'',model:ls.get('bitr_model')||'gpt-4o-mini',lost:false};
+let role=null, peer=null, hostConn=null, view=null, viewAt=0, lastPhaseKey='';
+
+/* =====================================================================
+   HOST: the host's browser holds the whole game state and is the referee
+   ===================================================================== */
+const conns=new Map(); // pid -> DataConnection
+let H=null, hostTick=null;
+
+function freshHost(code){
+  return {code,phase:'lobby',settings:{rounds:5,writeSec:60,voteSec:30,skill:'sneaky'},
+    players:new Map(),round:0,deck:shuffle(PROMPTS),prompt:null,answers:{},votes:{},cards:[],
+    bot:{status:'idle',text:'',token:0},deadline:0,history:[],tally:{humans:0,bot:0},gains:{}};
+}
+function createRoom(attempt=0){
+  const name=clean(ui.name,16); if(!name){ui.error='Pick a name first.';return render()}
+  ls.set('bitr_name',name);
+  const code=newCode(); role='host'; ui.screen='connecting'; ui.status='Opening a room'; ui.error=''; render();
+  peer=new Peer(PREFIX+code,PEER_OPTS);
+  peer.on('open',()=>{
+    H=freshHost(code);
+    H.players.set(myPid,{pid:myPid,name,score:0,connected:true,color:COLORS[0],spectator:false,found:0,bluffs:0});
+    ui.screen='game'; history.replaceState(null,'','?room='+code);
+    hostTick=setInterval(hostTimer,250); broadcast();
+  });
+  peer.on('connection',conn=>{
+    conn.on('data',m=>onHostMsg(conn,m));
+    conn.on('close',()=>dropConn(conn));
+    conn.on('error',()=>dropConn(conn));
+  });
+  peer.on('disconnected',()=>{try{peer.reconnect()}catch(e){}});
+  peer.on('error',err=>{
+    if(err.type==='unavailable-id'&&attempt<4){peer.destroy();return createRoom(attempt+1)}
+    if(!H){ui.screen='home';ui.error='Could not open a room ('+err.type+'). Check your connection and try again.';role=null;render()}
+  });
+}
+function dropConn(conn){
+  const pid=conn._pid; if(!pid||conns.get(pid)!==conn) return;
+  conns.delete(pid); const p=H.players.get(pid); if(p) p.connected=false;
+  checkAdvance(); broadcast();
+}
+function uniqueName(name,pid){
+  const taken=new Set([...H.players.values()].filter(p=>p.pid!==pid).map(p=>p.name.toLowerCase()));
+  let n=name,i=2; while(taken.has(n.toLowerCase())) n=name.slice(0,13)+' '+(i++); return n;
+}
+function onHostMsg(conn,m){
+  if(!m||typeof m!=='object') return;
+  if(m.t==='join'){
+    const pid=clean(m.pid,24); if(!pid) return;
+    let p=H.players.get(pid);
+    if(!p){
+      if(H.players.size>=MAX_PLAYERS){conn.send({t:'err',msg:'That room is full (12 players max).'});setTimeout(()=>conn.close(),400);return}
+      const used=new Set([...H.players.values()].map(x=>x.color));
+      p={pid,name:uniqueName(clean(m.name,16)||'Player',pid),score:0,connected:true,color:COLORS.find(c=>!used.has(c))||COLORS[H.players.size%COLORS.length],
+        spectator:H.phase==='write'||H.phase==='vote',found:0,bluffs:0};
+      H.players.set(pid,p);
+      toast(p.name+' joined');
+    } else p.connected=true;
+    const old=conns.get(pid); conns.set(pid,conn); conn._pid=pid;
+    if(old&&old!==conn) try{old.close()}catch(e){}
+    broadcast(); return;
+  }
+  const pid=conn._pid; if(!pid) return;
+  if(m.t==='answer') submitAnswer(pid,m.text);
+  else if(m.t==='vote') castVote(pid,m.id);
+}
+function activePlayers(){return [...H.players.values()].filter(p=>p.connected&&!p.spectator)}
+
+function startGame(){
+  if(activePlayers().length<2) return toast('Need at least 2 players.');
+  for(const p of H.players.values()){p.score=0;p.found=0;p.bluffs=0;p.spectator=false}
+  H.round=0;H.history=[];H.tally={humans:0,bot:0};startRound();
+}
+function startRound(){
+  H.round++; for(const p of H.players.values()) p.spectator=false;
+  if(!H.deck.length) H.deck=shuffle(PROMPTS);
+  H.prompt=H.deck.pop(); H.answers={}; H.votes={}; H.cards=[]; H.gains={};
+  H.phase='write'; H.deadline=Date.now()+H.settings.writeSec*1000;
+  const token=++H.bot.token; H.bot={status:'thinking',text:'',token};
+  broadcast();
+  botAnswer(H.prompt).then(text=>{
+    if(H.bot.token!==token||H.phase!=='write') return;
+    H.bot.status='ready'; H.bot.text=text; checkAdvance(); broadcast();
+  });
+}
+function submitAnswer(pid,text){
+  const p=H.players.get(pid); if(H.phase!=='write'||!p||p.spectator) return;
+  text=clean(text,MAX_ANS); if(!text) return;
+  H.answers[pid]=text; checkAdvance(); broadcast();
+}
+function castVote(pid,id){
+  const p=H.players.get(pid); if(H.phase!=='vote'||!p||p.spectator) return;
+  const c=H.cards.find(c=>c.id===id); if(!c||c.owner===pid) return;
+  H.votes[pid]=id; checkAdvance(); broadcast();
+}
+function checkAdvance(){
+  if(!H) return;
+  const act=activePlayers();
+  if(H.phase==='write'&&H.bot.status==='ready'&&act.length&&act.every(p=>H.answers[p.pid])) goVote();
+  else if(H.phase==='vote'&&act.length&&act.every(p=>H.votes[p.pid])) goReveal();
+}
+function hostTimer(){
+  if(!H||Date.now()<H.deadline) return;
+  if(H.phase==='write'){
+    if(H.bot.status!=='ready'){H.bot.token++;H.bot.status='ready';H.bot.text=H.prompt[1]}
+    goVote();
+  } else if(H.phase==='vote') goReveal();
+}
+function goVote(){
+  const human=Object.entries(H.answers).filter(([pid])=>H.players.has(pid));
+  H.cards=shuffle([...human.map(([owner,text])=>({owner,text})),{owner:'BOT',text:H.bot.text}]).map((c,i)=>({...c,id:'c'+i+rid(3)}));
+  H.votes={};
+  if(!human.length){toast('Nobody answered, so the bot wins this one.');return goReveal()}
+  H.phase='vote'; H.deadline=Date.now()+H.settings.voteSec*1000; broadcast();
+}
+function goReveal(){
+  const gains={};
+  const add=(pid,n)=>{gains[pid]=(gains[pid]||0)+n};
+  for(const [pid,cid] of Object.entries(H.votes)){
+    const c=H.cards.find(x=>x.id===cid); if(!c) continue;
+    if(c.owner==='BOT'){add(pid,2);H.tally.humans++;const p=H.players.get(pid);if(p)p.found++}
+    else{add(c.owner,1);H.tally.bot++;const o=H.players.get(c.owner);if(o)o.bluffs++}
+  }
+  // players who were in the round but didn't vote count as fooled
+  for(const p of H.players.values()) if(!p.spectator&&H.answers[p.pid]&&!H.votes[p.pid]&&H.cards.length>1) H.tally.bot++;
+  for(const [pid,n] of Object.entries(gains)){const p=H.players.get(pid);if(p)p.score+=n}
+  H.gains=gains;
+  H.history.push(...Object.values(H.answers));
+  H.phase='reveal'; H.deadline=0; broadcast();
+}
+function nextRound(){ if(H.round>=H.settings.rounds){H.phase='final';H.gains={};broadcast()} else startRound() }
+function backToLobby(){ H.phase='lobby'; H.round=0; for(const p of H.players.values()){p.score=0;p.spectator=false} broadcast() }
+function kick(pid){
+  if(pid===myPid||H.phase!=='lobby') return;
+  const c=conns.get(pid); H.players.delete(pid); conns.delete(pid);
+  if(c){try{c.send({t:'kicked'})}catch(e){} setTimeout(()=>{try{c.close()}catch(e){}},300)}
+  broadcast();
+}
+
+/* ---------- the bot's brain ---------- */
+async function askOpenAI(promptText,samples){
+  const key=ui.key.trim(); if(!key) throw new Error('No API key');
+  const sneaky=H?H.settings.skill==='sneaky':true;
+  let sys='You are secretly one of the players in a party game called "Bot in the Room". Every player answers the same prompt, then everyone guesses which answer was written by the AI. Your only goal is to blend in so nobody picks your answer.\n'+
+    'Rules: reply with ONE answer only, 2 to 14 words, no quotation marks, no explanation. Never mention AI, bots or the game.';
+  if(sneaky){
+    sys+='\nWrite like a real person typing fast on their phone at a party: casual, a little funny, not polished. Lowercase is fine, skipping punctuation is fine. Avoid fancy words like "delightfully", "whimsical", "epic" and avoid emojis.';
+    if(samples.length) sys+='\nThese are real answers the human players wrote earlier in this game. Copy their length, capitalization, punctuation habits and kind of humor closely:\n- '+samples.join('\n- ');
+  } else sys+='\nBe clever and witty.';
+  const ctrl=new AbortController(); const to=setTimeout(()=>ctrl.abort(),15000);
+  try{
+    const res=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',signal:ctrl.signal,
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body:JSON.stringify({model:ui.model.trim()||'gpt-4o-mini',messages:[{role:'system',content:sys},{role:'user',content:'Prompt: '+promptText}]})});
+    if(!res.ok){let msg='';try{msg=(await res.json()).error.message}catch(e){} throw new Error('OpenAI '+res.status+(msg?': '+msg:''))}
+    const j=await res.json();
+    let t=(j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content)||'';
+    t=t.split('\n').map(s=>s.trim()).filter(Boolean)[0]||'';
+    t=t.replace(/^(answer|my answer)\s*:\s*/i,'').replace(/^["'“”‘’]+|["'“”‘’]+$/g,'').trim();
+    if(!t) throw new Error('Empty answer from OpenAI');
+    return clean(t,MAX_ANS);
+  } finally {clearTimeout(to)}
+}
+async function botAnswer(prompt){
+  const delay=new Promise(r=>setTimeout(r,2500+Math.random()*4000)); // never instantly "ready"
+  let text=prompt[1];
+  if(ui.key.trim()){
+    try{ text=await askOpenAI(prompt[0],shuffle(H.history).slice(0,10)) }
+    catch(e){ toast('Bot fell back to an offline answer ('+(e.name==='AbortError'?'timeout':e.message.slice(0,80))+')') }
+  }
+  await delay; return text;
+}
+
+/* ---------- what each player is allowed to see ---------- */
+function buildView(pid){
+  const me=H.players.get(pid);
+  const named=o=>{if(o==='BOT')return{name:'The Bot',color:'#ff7ab6'};const p=H.players.get(o);return p?{name:p.name,color:p.color}:{name:'(left)',color:'#666'}};
+  const v={code:H.code,phase:H.phase,round:H.round,rounds:H.settings.rounds,settings:H.settings,isHost:pid===myPid,me:pid,
+    spectator:!!(me&&me.spectator),remaining:H.deadline?Math.max(0,H.deadline-Date.now()):0,
+    total:(H.phase==='write'?H.settings.writeSec:H.settings.voteSec)*1000,
+    prompt:H.prompt?H.prompt[0]:'',bot:H.bot.status,tally:H.tally,
+    players:[...H.players.values()].map(p=>({pid:p.pid,name:p.name,color:p.color,score:p.score,connected:p.connected,host:p.pid===myPid,
+      spectator:p.spectator,found:p.found,bluffs:p.bluffs,gain:H.gains[p.pid]||0,
+      done:H.phase==='write'?!!H.answers[p.pid]:H.phase==='vote'?!!H.votes[p.pid]:false})),
+    myAnswer:H.answers[pid]||'',myVote:H.votes[pid]||'',cards:[]};
+  if(H.phase==='vote') v.cards=H.cards.map(c=>({id:c.id,text:c.text,mine:c.owner===pid}));
+  if(H.phase==='reveal') v.cards=H.cards.map(c=>({id:c.id,text:c.text,mine:c.owner===pid,bot:c.owner==='BOT',owner:named(c.owner),
+    voters:Object.entries(H.votes).filter(([,id])=>id===c.id).map(([vp])=>named(vp))}));
+  return v;
+}
+function broadcast(){
+  if(!H) return;
+  for(const p of H.players.values()){
+    if(p.pid===myPid){applyView(buildView(myPid));continue}
+    const c=conns.get(p.pid); if(c&&c.open) try{c.send({t:'view',v:buildView(p.pid)})}catch(e){}
+  }
+}
+
+/* =====================================================================
+   GUEST
+   ===================================================================== */
+let retries=0, everConnected=false;
+function joinRoom(){
+  const name=clean(ui.name,16), code=ui.joinCode.toUpperCase();
+  if(!name){ui.error='Pick a name first.';return render()}
+  if(!/^[A-Z]{4}$/.test(code)){ui.error='Room codes are 4 letters.';return render()}
+  ls.set('bitr_name',name); role='guest'; ui.error=''; ui.screen='connecting'; ui.status='Joining room '+code; everConnected=false; retries=0; render();
+  peer=new Peer(PEER_OPTS);
+  peer.on('open',()=>connectHost());
+  peer.on('disconnected',()=>{try{peer.reconnect()}catch(e){}});
+  peer.on('error',err=>{
+    if(err.type==='peer-unavailable'){
+      if(!everConnected) return leave('Room '+code+' was not found. Check the code with your host.');
+      return retryHost();
+    }
+    if(!everConnected) leave('Could not connect ('+err.type+'). Try again.');
+  });
+}
+function connectHost(){
+  const code=ui.joinCode.toUpperCase();
+  hostConn=peer.connect(PREFIX+code,{reliable:true});
+  const c=hostConn;
+  const guard=setTimeout(()=>{if(!c.open&&c===hostConn){if(!everConnected)leave('Could not reach room '+code+'. The host may be on a strict network; try another Wi-Fi or mobile data.');else retryHost()}},12000);
+  c.on('open',()=>{clearTimeout(guard);everConnected=true;retries=0;ui.lost=false;c.send({t:'join',pid:myPid,name:clean(ui.name,16)});history.replaceState(null,'','?room='+code)});
+  c.on('data',m=>{
+    if(!m) return;
+    if(m.t==='view'){ui.screen='game';applyView(m.v)}
+    else if(m.t==='err') leave(m.msg);
+    else if(m.t==='kicked') leave('The host removed you from the room.');
+  });
+  c.on('close',()=>{if(c===hostConn&&role==='guest')retryHost()});
+}
+function retryHost(){
+  if(role!=='guest') return;
+  ui.lost=true; render();
+  if(++retries>8) return leave('Lost the host. The game may have ended.');
+  setTimeout(()=>{if(role==='guest'&&peer&&!peer.destroyed)connectHost()},1500);
+}
+
+/* ---------- shared ---------- */
+function act(type,payload){
+  if(role==='host'){ if(type==='answer') submitAnswer(myPid,payload); else if(type==='vote') castVote(myPid,payload) }
+  else if(hostConn&&hostConn.open) hostConn.send({t:type,...(type==='answer'?{text:payload}:{id:payload})});
+  else toast('Reconnecting to host…');
+}
+function leave(msg){
+  role=null; try{peer&&peer.destroy()}catch(e){} peer=null; hostConn=null; H=null; view=null; conns.clear();
+  clearInterval(hostTick); ui.screen='home'; ui.error=msg||''; ui.lost=false; ui.draft=''; lastPhaseKey='';
+  history.replaceState(null,'',location.pathname); render();
+}
+function applyView(v){
+  const key=v.phase+':'+v.round;
+  if(key!==lastPhaseKey){ if(v.phase==='write'){ui.draft='';ui.editing=false} lastPhaseKey=key; window.scrollTo({top:0,behavior:'smooth'}) }
+  view=v; viewAt=Date.now(); render();
+}
+
+/* =====================================================================
+   RENDERING
+   ===================================================================== */
+const app=$('#app');
+function render(){
+  const a=document.activeElement, fid=a&&a.id, sel=fid&&typeof a.selectionStart==='number'?[a.selectionStart,a.selectionEnd]:null;
+  app.innerHTML=header()+body();
+  if(fid){const el=document.getElementById(fid); if(el){el.focus({preventScroll:true}); if(sel&&el.setSelectionRange)try{el.setSelectionRange(sel[0],sel[1])}catch(e){}}}
+  const q=$('#qr'); if(q&&window.QRCode){try{new QRCode(q,{text:inviteLink(),width:264,height:264,correctLevel:QRCode.CorrectLevel.M})}catch(e){q.remove()}} else if(q) q.remove();
+  tick();
+}
+function inviteLink(){return location.origin+location.pathname+'?room='+(view?view.code:'')}
+function header(){
+  const inRoom=view&&ui.screen==='game';
+  return `<header class="top"><div class="brand"><span>🤖</span> Bot in the Room</div>${inRoom?`<div class="row" style="flex:0 0 auto;gap:8px"><span class="chip-code">${esc(view.code)}</span><button class="btn small ghost" data-act="leave">Leave</button></div>`:''}</header>`
+   +(ui.lost?`<div class="banner">Connection to the host dropped. Reconnecting<span class="dots"></span></div>`:'');
+}
+function body(){
+  if(ui.screen==='home') return homeHTML();
+  if(ui.screen==='connecting'||!view) return `<div class="center"><div class="spin"></div><p class="muted">${esc(ui.status)}<span class="dots"></span></p><button class="btn small ghost" data-act="leave">Cancel</button></div>`;
+  return ({lobby:lobbyHTML,write:writeHTML,vote:voteHTML,reveal:revealHTML,final:finalHTML}[view.phase]||(()=>''))();
+}
+function homeHTML(){
+  return `<section class="hero"><div class="logo">🤖</div><h1>Bot in the Room</h1>
+  <p class="tag">Everyone answers the same prompt. One answer is secretly written by AI. Spot the bot, or get mistaken for it.</p></section>
+  <div class="card">
+    <label for="in-name">Your name</label>
+    <input id="in-name" data-bind="name" maxlength="16" autocomplete="nickname" placeholder="e.g. Priya" value="${esc(ui.name)}">
+    ${ui.joinCode?`<div style="height:12px"></div><button class="btn primary" data-act="join">Join room ${esc(ui.joinCode)}</button>
+      <div class="or">or start your own</div><button class="btn" data-act="create">Create a new room</button>`
+    :`<div style="height:12px"></div><button class="btn primary" data-act="create">Create a room</button>
+      <div class="or">or join a friend's room</div>`}
+    <div class="row" style="margin-top:${ui.joinCode?'12px':'0'}"><input id="in-code" class="code-input" data-bind="joinCode" maxlength="4" autocomplete="off" autocapitalize="characters" placeholder="CODE" value="${esc(ui.joinCode)}">
+    ${ui.joinCode?'':'<button class="btn shrink" style="width:auto" data-act="join">Join</button>'}</div>
+    ${ui.error?`<p class="err" role="alert">${esc(ui.error)}</p>`:''}
+  </div>
+  <div class="card"><h3>How to play</h3><ol class="steps">
+    <li><span class="num">1</span><div><b>Write.</b> Everyone gets the same silly prompt and types a short answer. The bot quietly writes one too.</div></li>
+    <li><span class="num">2</span><div><b>Vote.</b> All answers show up anonymously. Pick the one you think the AI wrote.</div></li>
+    <li><span class="num">3</span><div><b>Score.</b> +2 for finding the bot. +1 every time someone thinks <i>your</i> answer is the bot. In Sneaky mode the bot studies how your group writes and gets harder to spot each round.</div></li>
+  </ol></div>
+  <p class="foot">2–12 players · no sign-up · works on phones · best on a video call or in the same room</p>`;
+}
+function playersHTML(opts={}){
+  return `<div class="players">${view.players.map(p=>`<span class="pchip ${p.connected?'':'off'} ${opts.status&&p.done?'done':''}">
+    <span class="av" style="background:${p.color}">${initial(p.name)}</span>${esc(p.name)}${p.pid===view.me?' (you)':''}${p.host?' 👑':''}
+    ${opts.status&&!p.spectator?(p.done?'<span class="check">✓</span>':'<span class="muted dots"></span>'):''}
+    ${p.spectator&&opts.status?'<span class="muted small">next round</span>':''}
+    ${!p.connected?'<span class="muted small">offline</span>':''}
+    ${opts.kick&&view.isHost&&!p.host?`<button class="x" title="Remove ${esc(p.name)}" data-act="kick" data-id="${esc(p.pid)}">×</button>`:''}</span>`).join('')}
+    ${opts.status&&view.phase==='write'?`<span class="pchip ${view.bot==='ready'?'done':''}"><span class="av" style="background:#ff7ab6">🤖</span>The Bot ${view.bot==='ready'?'<span class="check">✓</span>':'<span class="muted dots"></span>'}</span>`:''}</div>`;
+}
+function lobbyHTML(){
+  const s=view.settings, online=view.players.filter(p=>p.connected).length, h=view.isHost;
+  const sel=(k,opts,fmt)=>`<select data-setting="${k}" ${h?'':'disabled'}>${opts.map(o=>`<option value="${o}" ${String(s[k])===String(o)?'selected':''}>${fmt(o)}</option>`).join('')}</select>`;
+  return `<div class="card center pop"><label>Room code</label><div class="bigcode">${esc(view.code)}</div>
+    <div id="qr"></div><div class="row" style="max-width:360px;margin:0 auto"><button class="btn" data-act="copy">Copy invite link</button></div>
+    <p class="muted small" style="margin:10px 0 0">Friends scan the code or open the link on their phone.</p></div>
+  <div class="card"><h3>Players (${view.players.length}/${MAX_PLAYERS})</h3>${playersHTML({kick:true})}
+    ${online<2?'<p class="muted small" style="margin:12px 0 0">Waiting for at least one more player<span class="dots"></span></p>':''}</div>
+  <div class="card"><h3>Game settings ${h?'':'<span class="muted small">(host picks)</span>'}</h3>
+    <div class="grid2">
+      <div><label>Rounds</label>${sel('rounds',[3,5,7,10],o=>o+' rounds')}</div>
+      <div><label>Bot skill</label>${sel('skill',['sneaky','normal'],o=>o==='sneaky'?'Sneaky (copies you)':'Normal')}</div>
+      <div><label>Writing time</label>${sel('writeSec',[30,45,60,90],o=>o+' sec')}</div>
+      <div><label>Voting time</label>${sel('voteSec',[20,30,45],o=>o+' sec')}</div>
+    </div>
+    ${h?brainHTML():''}
+  </div>
+  ${h?`<button class="btn primary" data-act="start" ${online<2?'disabled':''}>${online<2?'Need 2+ players to start':'Start game'}</button>
+       <p class="muted small center">Keep this tab open, you're hosting the game.</p>`
+     :`<div class="card center"><p class="f" style="font-size:18px;margin:0">Waiting for the host to start<span class="dots"></span></p></div>`}`;
+}
+function brainHTML(){
+  const on=!!ui.key.trim();
+  return `<div style="margin-top:16px"><label>Bot brain &nbsp;<span class="pill ${on?'ok':'off'}">${on?'OpenAI · live':'Offline answers'}</span></label>
+  <details ${on?'':'open'}><summary>${on?'Change OpenAI settings':'Add your OpenAI API key for a live AI bot'}</summary>
+    <div style="margin-top:10px" class="grid2">
+      <div style="grid-column:1/-1"><input id="in-key" type="password" data-bind="key" autocomplete="off" placeholder="sk-..." value="${esc(ui.key)}"></div>
+      <div><input id="in-model" data-bind="model" placeholder="model" value="${esc(ui.model)}"></div>
+      <div class="row" style="gap:8px"><button class="btn small" data-act="testkey">Test</button>${on?'<button class="btn small ghost" data-act="forgetkey">Forget</button>':''}</div>
+    </div>
+    <p class="note">The key stays in this browser only. It is never sent to other players; the bot's answers are generated here, on the host's device, straight from OpenAI. Without a key the bot uses pre-written answers.</p>
+  </details></div>`;
+}
+function timerHTML(){
+  return `<div class="roundbar"><span>Round ${view.round} of ${view.rounds}</span><span>⏱ <span id="tnum"></span></span></div>
+  <div class="timer" id="tbox"><div class="bar" id="tbar"></div></div>`;
+}
+function writeHTML(){
+  let main;
+  if(view.spectator) main=`<div class="note center">You joined mid-round. Hang tight, you're in from the next round.</div>`;
+  else if(view.myAnswer&&!ui.editing) main=`<div class="locked">${esc(view.myAnswer)}</div>
+    <div class="row"><button class="btn ghost small" data-act="edit">Edit answer</button><span class="muted small" style="text-align:right">Locked in. Waiting for others<span class="dots"></span></span></div>`;
+  else main=`<label for="in-ans">Your answer, written like a human</label>
+    <textarea id="in-ans" data-bind="draft" rows="2" maxlength="${MAX_ANS}" placeholder="keep it short and real…">${esc(ui.draft)}</textarea>
+    <div class="row" style="margin-top:10px"><span class="count" id="count">${ui.draft.length}/${MAX_ANS}</span><button class="btn primary" data-act="submit">Lock it in</button></div>`;
+  return `${timerHTML()}<div class="prompt pop">${esc(view.prompt)}</div><div class="card">${main}</div>
+  <div class="card"><h3>Who's done</h3>${playersHTML({status:true})}</div>`;
+}
+function voteHTML(){
+  const canVote=!view.spectator;
+  return `${timerHTML()}<div class="prompt sm">${esc(view.prompt)}</div>
+  <h2 class="center">Which answer did the bot write?</h2>
+  <p class="muted center small" style="margin-top:0">${canVote?(view.myVote?'Vote locked. You can still switch until time runs out.':'Tap the one that feels like AI. You can’t pick your own.'):'Watching this round.'}</p>
+  <div class="answers">${view.cards.map(c=>`<button class="ans pop ${c.mine?'mine':''} ${view.myVote===c.id?'sel':''}" data-act="vote" data-id="${esc(c.id)}" ${c.mine||!canVote?'disabled':''}>
+    ${esc(c.text)}${c.mine?'<span class="tagx">YOURS</span>':''}${view.myVote===c.id?'<span class="tagx" style="color:var(--accent2)">YOUR VOTE</span>':''}</button>`).join('')}</div>
+  <div class="card"><h3>Votes in</h3>${playersHTML({status:true})}</div>`;
+}
+function scoreHTML(){
+  const ps=view.players.slice().sort((a,b)=>b.score-a.score);
+  return `<div class="score">${ps.map((p,i)=>`<div class="srow"><span class="muted f" style="width:18px">${i+1}</span><span class="av" style="background:${p.color}">${initial(p.name)}</span>
+    <span class="n">${esc(p.name)}${p.pid===view.me?' (you)':''}</span><span class="pts">${p.score}${p.gain?`<span class="gain">+${p.gain}</span>`:''}</span></div>`).join('')}</div>`;
+}
+function revealHTML(){
+  const bot=view.cards.find(c=>c.bot), found=bot?bot.voters.length:0;
+  const voters=view.cards.reduce((n,c)=>n+c.voters.length,0);
+  const meFound=bot&&bot.voters.some(v=>v.name===(view.players.find(p=>p.pid===view.me)||{}).name);
+  const ordered=view.cards.slice().sort((a,b)=>(b.bot-a.bot));
+  const last=view.round>=view.rounds;
+  return `<div class="roundbar"><span>Round ${view.round} of ${view.rounds}</span><span>Reveal</span></div>
+  <div class="prompt sm">${esc(view.prompt)}</div>
+  <div class="headline pop">${voters===0?'Nobody voted. The bot slips away 🤖':found===0?'Nobody found the bot 😱':found===voters?'Everyone caught the bot! 🎯':`${found} of ${voters} caught the bot`}</div>
+  <p class="center muted" style="margin:0 0 8px">${view.spectator?'':meFound?'You found it: +2':'You missed it this time.'}</p>
+  <div class="answers">${ordered.map(c=>`<div class="ans pop ${c.bot?'bot':''}">${c.bot?'<span class="tagx" style="color:var(--accent2)">🤖 THE BOT</span>':''}${esc(c.text)}
+    <div class="who">${c.bot?'':`<span class="av" style="background:${c.owner.color};width:20px;height:20px;font-size:11px">${initial(c.owner.name)}</span><span class="owner">${esc(c.owner.name)}</span>`}
+    ${c.voters.length?`<span>· picked by</span>${c.voters.map(v=>`<span class="vchip" style="border:1px solid ${v.color}">${esc(v.name)}</span>`).join('')}`:'<span>· no votes</span>'}
+    ${!c.bot&&c.voters.length?`<span class="gain">+${c.voters.length} bluff</span>`:''}</div></div>`).join('')}</div>
+  <div class="card"><h3>Scores</h3>${scoreHTML()}
+    <div class="vs" style="margin-top:12px"><span>Humans <b style="color:var(--accent)">${view.tally.humans}</b></span><span class="muted">vs</span><span><b style="color:var(--accent2)">${view.tally.bot}</b> Bot</span></div></div>
+  ${view.isHost?`<button class="btn primary" data-act="next">${last?'See final results':'Next round →'}</button>`:`<p class="center muted">Waiting for the host to continue<span class="dots"></span></p>`}`;
+}
+function finalHTML(){
+  const ps=view.players.slice().sort((a,b)=>b.score-a.score);
+  const top=ps.slice(0,3), order=[top[1],top[0],top[2]].filter(Boolean), hts={0:110,1:80,2:60};
+  const best=(k)=>{const m=Math.max(0,...ps.map(p=>p[k]));return m?ps.filter(p=>p[k]===m).map(p=>esc(p.name)).join(', ')+` (${m})`:'Nobody'};
+  const t=view.tally, verdict=t.humans>t.bot?'Humans win! The bot was exposed. 🎉':t.humans<t.bot?'The bot wins. It walked among you. 🤖':'A dead heat between humans and the bot.';
+  return `<div class="center pop"><div class="logo">🏆</div><h2>Final results</h2></div>
+  <div class="podium">${order.map(p=>{const r=ps.indexOf(p);return `<div class="pod"><div class="av" style="background:${p.color};width:40px;height:40px;margin:0 auto;font-size:18px">${initial(p.name)}</div>
+    <div class="nm">${esc(p.name)}</div><div class="blk" style="height:${hts[r]}px">${['🥇','🥈','🥉'][r]}<div class="small muted">${p.score} ${p.score===1?'pt':'pts'}</div></div></div>`}).join('')}</div>
+  <div class="card"><div class="vs"><span class="big" style="color:var(--accent)">${t.humans}</span><span class="muted">Humans vs Bot</span><span class="big" style="color:var(--accent2)">${t.bot}</span></div>
+    <p class="center f" style="font-size:18px;margin:4px 0 0">${verdict}</p></div>
+  <div class="awards"><div class="award"><div class="t">🔍 Best detective</div><div class="v">${best('found')}</div></div>
+    <div class="award"><div class="t">🎭 Most bot-like human</div><div class="v">${best('bluffs')}</div></div></div>
+  <div class="card"><h3>Full scoreboard</h3>${scoreHTML()}</div>
+  ${view.isHost?`<div class="grid2"><button class="btn primary" data-act="again">Play again</button><button class="btn" data-act="lobby">Back to lobby</button></div>`
+    :`<p class="center muted">The host can start another game<span class="dots"></span></p>`}`;
+}
+function tick(){
+  const n=$('#tnum'),b=$('#tbar'); if(!n||!view) return;
+  const left=Math.max(0,view.remaining-(Date.now()-viewAt)), s=Math.ceil(left/1000);
+  n.textContent=s+'s'; b.style.width=(100*left/view.total)+'%'; $('#tbox').classList.toggle('low',s<=10);
+}
+setInterval(tick,250);
+
+/* ---------- events ---------- */
+const ACT={
+  create:()=>createRoom(), join:()=>joinRoom(),
+  leave:()=>{if(role!=='host'||confirm('Leave and end the game for everyone?'))leave()},
+  copy:()=>{const l=inviteLink(); (navigator.clipboard?navigator.clipboard.writeText(l):Promise.reject()).then(()=>toast('Invite link copied')).catch(()=>prompt('Copy this link',l))},
+  start:()=>startGame(), next:()=>nextRound(), again:()=>startGame(), lobby:()=>backToLobby(),
+  kick:b=>kick(b.dataset.id),
+  submit:()=>{const t=clean(ui.draft,MAX_ANS); if(!t) return toast('Write something first'); ui.editing=false; act('answer',t)},
+  edit:()=>{ui.editing=true;ui.draft=view.myAnswer;render();const t=$('#in-ans');if(t){t.focus();t.setSelectionRange(t.value.length,t.value.length)}},
+  vote:b=>act('vote',b.dataset.id),
+  testkey:async b=>{if(!ui.key.trim())return toast('Paste a key first');b.disabled=true;b.textContent='…';
+    try{const a=await askOpenAI('The worst possible name for a pet goldfish',[]);toast('Works! Bot says: “'+a+'”')}catch(e){toast(e.message.slice(0,140))}
+    b.disabled=false;b.textContent='Test'},
+  forgetkey:()=>{ui.key='';ls.set('bitr_key',null);render();toast('Key removed from this browser')}
+};
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act]'); if(!b||b.disabled) return; ACT[b.dataset.act]&&ACT[b.dataset.act](b)});
+document.addEventListener('input',e=>{
+  const k=e.target.dataset.bind; if(!k) return;
+  if(k==='joinCode'){e.target.value=e.target.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,4)}
+  ui[k]=e.target.value;
+  if(k==='draft'){const c=$('#count');if(c)c.textContent=ui.draft.length+'/'+MAX_ANS}
+  if(k==='key'){ls.set('bitr_key',ui.key.trim()||null)}
+  if(k==='model'){ls.set('bitr_model',ui.model.trim()||null)}
+});
+document.addEventListener('change',e=>{
+  const k=e.target.dataset.setting; if(!k||!H) return;
+  H.settings[k]=k==='skill'?e.target.value:Number(e.target.value); broadcast();
+  if(e.target.closest('.card')&&k==='skill') toast(e.target.value==='sneaky'?'Sneaky: the bot copies how your group writes':'Normal: the bot just tries to be witty');
+});
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter') return;
+  const id=e.target.id;
+  if(id==='in-ans'&&!e.shiftKey){e.preventDefault();ACT.submit()}
+  else if(id==='in-code'||(id==='in-name'&&ui.joinCode)){e.preventDefault();ACT.join()}
+  else if(id==='in-name'){e.preventDefault();ACT.create()}
+});
+window.addEventListener('beforeunload',e=>{if(role==='host'&&H&&H.players.size>1){e.preventDefault();e.returnValue=''}});
+if(!window.Peer){ui.error='Could not load the networking library. Check your connection and reload.'}
+render();
+</script>
+</body>
+</html>
